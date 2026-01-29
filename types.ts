@@ -1,19 +1,15 @@
 
 export enum Gender {
   FEMALE = 'Femenino',
-  MALE = 'Masculino',
-  OTHER = 'Otro'
+  MALE = 'Masculino'
 }
 
 export enum Category {
-  ALUMNO = 'Alumno Actual Tomauno Models',
-  EGRESADO = 'Egresado Tomauno',
-  POSTULADOS = 'Postulados ✅',
-  STAFF = 'Staff ⭐',
-  BEAUTY = 'Beauty Face 💎',
-  DESACTUALIZADOS = 'Desactualizados ⚠️',
   NEW_FACE = 'New Face / Sin Experiencia',
-  COLABORADOR = 'Modelo Colaborador (Contenido)'
+  ALUMNO = 'Alumno Actual',
+  EGRESADO = 'Egresado Tomauno',
+  FREELANCE = 'Freelance',
+  AGENCIA = 'Agencia'
 }
 
 export interface Model {
@@ -33,28 +29,20 @@ export interface Model {
   ig: string;
   exp: string; // Experiencia y Anhelos
   cat: Category;
-  quals: string[]; // Destrezas
+  agenciaName?: string;
+  quals: string[]; // [Pasarela, Fotografía, Actuación, Baile, etc.]
   beauty: boolean;
   staff: boolean;
-  isCollaborator: boolean;
-  isPublic: boolean;
+  isCollaborator: boolean; // Si es parte del grupo de contenido
   foto1: string;
   foto2: string;
   foto3: string;
   composite: string;
-  video1: string; // Video Presentación
-  video2: string; // Video Pasarela
-  lastUpdate?: string;
-  postulatedTo?: string[];
-}
-
-export interface WallPost {
-  id: string;
-  dni: string;
-  nombre: string;
-  mensaje: string;
-  timestamp: string;
-  color?: string;
+  video1: string;
+  video2: string;
+  portfolioWeb?: string;
+  lastUpdate: string;
+  postulatedTo: string[];
 }
 
 export interface Course {
@@ -62,23 +50,47 @@ export interface Course {
   titulo: string;
   fecha: string;
   horario: string;
+  duracion: string;
   costo: string;
   temario: string;
-  urlFlyer: string;
-  enabled: boolean;
+  img: string;
+  location: string;
+  active: boolean;
 }
 
 export interface NewsItem {
   id: string;
-  type: 'CASTING' | 'EVENTO' | 'NOTICIA';
   title: string;
-  desc: string;
+  type: 'CASTING' | 'EVENTO' | 'CONSEJO' | 'COLABORACION';
   date: string;
-  applicants?: string[];
+  desc: string;
+  img?: string;
+  active: boolean;
+  applicants: string[]; 
 }
 
 export interface FAQ {
   id: string;
   q: string;
   a: string;
+}
+
+export interface WallPost {
+  id: string;
+  nombre: string;
+  mensaje: string;
+  timestamp: string;
+  reactions: Record<string, number>;
+  color?: string; // Para varianza visual
+}
+
+// Added to fix: Module '"../types"' has no exported member 'PreRegistration'
+export interface PreRegistration {
+  id: string;
+  courseTitle: string;
+  nombre: string;
+  dni: string;
+  wa: string;
+  timestamp: string;
+  status: string;
 }
