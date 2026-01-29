@@ -3,10 +3,18 @@ import React, { useState } from 'react';
 import { FAQ } from '../types';
 
 interface FAQSectionProps {
-  faqs: FAQ[];
+  // Made faqs optional to prevent errors when used without props in App.tsx
+  faqs?: FAQ[];
 }
 
-export const FAQSection: React.FC<FAQSectionProps> = ({ faqs }) => {
+// Default FAQs to display if none are provided by props
+const DEFAULT_FAQS: FAQ[] = [
+  { id: '1', q: '¿Cuáles son los requisitos para ser modelo?', a: 'En Tomauno Models buscamos perfiles con actitud, compromiso y ganas de aprender. No es necesaria experiencia previa para el curso de iniciación.' },
+  { id: '2', q: '¿Qué edad debo tener?', a: 'Aceptamos alumnos de todas las edades. En caso de ser menor de edad, se requiere autorización de los padres o tutor.' },
+  { id: '3', q: '¿Cómo son los cursos?', a: 'Nuestros cursos son integrales, abarcando pasarela, fotografía, marketing personal y estética profesional.' }
+];
+
+export const FAQSection: React.FC<FAQSectionProps> = ({ faqs = DEFAULT_FAQS }) => {
   const [open, setOpen] = useState<string | null>(null);
 
   return (

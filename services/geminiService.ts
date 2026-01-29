@@ -1,10 +1,10 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+// Fix: Moved GoogleGenAI instantiation inside the function to ensure it uses the most up-to-date process.env.API_KEY
 export const askPrisma = async (prompt: string, customKnowledge: string) => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,

@@ -1,147 +1,214 @@
 
 import React, { useState, useEffect } from 'react';
-import { Model, Gender, Category } from '../types';
+import { Model, Category, Gender } from '../types';
+import { QUALITIES_LIST } from '../constants';
+import { apiService } from '../apiService';
 
 interface ModelProfileProps {
   model: Model;
-  onSave: (m: Model) => void;
-  onDelete: (dni: string) => void;
-  onLogout: () => void;
+  isRegistered: boolean;
+  onSave: (m: Model) => Promise<boolean>;
+  onDelete: (dni: string) => Promise<boolean>;
   onClose: () => void;
 }
 
-export const ModelProfile: React.FC<ModelProfileProps> = ({ model, onSave, onDelete, onLogout, onClose }) => {
+export const ModelProfile: React.FC<ModelProfileProps> = ({ model, isRegistered, onSave, onDelete, onClose }) => {
   const [formData, setFormData] = useState<Model>(model);
-  const [loading, setLoading] = useState(false);
+  const [originalData, setOriginalData] = useState<string>(JSON.stringify(model));
+  const [status, setStatus] = useState<'idle' | 'saving' | 'success'>('idle');
+  const [isDirty, setIsDirty] = useState(false);
 
-  const QUALITIES = ['Pasarela', 'Fotografía', 'Actuación', 'Baile', 'Publicidad', 'Alta Costura'];
+  useEffect(() => {
+    setIsDirty(JSON.stringify(formData) !== originalData);
+  }, [formData, originalData]);
 
   const handleChange = (e: any) => {
     const { name, value, type, checked } = e.target;
-    if (type === 'checkbox') {
-      if (name === 'quals') {
-        const newQuals = checked 
-          ? [...formData.quals, value] 
-          : formData.quals.filter(q => q !== value);
-        setFormData(prev => ({ ...prev, quals: newQuals }));
-      } else {
-        setFormData(prev => ({ ...prev, [name]: checked }));
+    let val = type === 'checkbox' ? checked : value;
+
+    if (name === 'quals') {
+      const newQuals = checked ? [...formData.quals, value] : formData.quals.filter(q => q !== value);
+      setFormData(prev => ({ ...prev, quals: newQuals }));
+      return;
+    }
+
+    if (name === 'altura') {
+      val = value.replace('.', ',');
+      if (val.length === 1 && !isNaN(val)) val += ',';
+    }
+    if (['nombre', 'localidad'].includes(name) && typeof val === 'string') {
+      val = val.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    setFormData(prev => ({ ...prev, [name]: val }));
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, tipo: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (tipo.includes('video') && file.size > 50 * 1024 * 1024) {
+      alert("El video no debe superar los 50MB");
+      return;
+    }
+
+    setStatus('saving');
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const res = await apiService.request('uploadFile', {
+        base64: reader.result, dni: formData.dni, nombre: formData.nombre, tipo, oldUrl: (formData as any)[tipo]
+      });
+      if (res && !res.includes("ERROR")) {
+        setFormData(prev => ({ ...prev, [tipo]: res }));
       }
+      setStatus('idle');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('saving');
+    const ok = await onSave(formData);
+    if (ok) {
+      setOriginalData(JSON.stringify(formData));
+      setStatus('success');
+      setTimeout(() => { setStatus('idle'); onClose(); }, 1500);
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setStatus('idle');
+      alert("Error al guardar. Inténtalo de nuevo.");
     }
   };
 
-  const isFormValid = formData.nombre.trim() !== '' && formData.edad > 0;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      onSave({ ...formData, lastUpdate: new Date().toISOString() });
-      setLoading(false);
-      alert('¡Portfolio Actualizado con Éxito!');
-    }, 2000);
-  };
-
   return (
-    <div className="max-w-5xl mx-auto space-y-10 pb-20 animate-fade">
-      <div className="flex justify-between items-center bg-zinc-950 p-6 rounded-[30px] border border-zinc-900 shadow-xl">
-        <h2 className="font-luxury text-2xl uppercase tracking-tighter">Mi <span className="text-[#990000] italic">Portfolio 2026</span></h2>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="text-[10px] font-bold uppercase tracking-widest bg-zinc-900 px-6 py-2 rounded-full border border-zinc-800">Cerrar</button>
-          {model.nombre && (
-            <button onClick={() => confirm('¿Seguro quieres darte de baja? Esta acción es permanente.') && onDelete(model.dni)} className="text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-white border border-red-900/30 px-6 py-2 rounded-full">Darse de Baja</button>
-          )}
+    <div className="max-w-5xl mx-auto space-y-12 animate-fade pb-40">
+      {status === 'saving' && (
+        <div className="fixed inset-0 z-[11000] bg-black/98 flex flex-col items-center justify-center space-y-8 backdrop-blur-xl">
+           <div className="w-20 h-20 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+           <p className="font-luxury text-2xl tracking-[0.5em] uppercase animate-pulse">Actualizando Datos...</p>
+        </div>
+      )}
+
+      {status === 'success' && (
+        <div className="fixed inset-0 z-[11000] bg-black/90 flex items-center justify-center backdrop-blur-md">
+           <div className="bg-zinc-950 p-16 rounded-[60px] border border-green-600 text-center space-y-4 shadow-[0_0_100px_rgba(0,255,0,0.2)]">
+              <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✓</div>
+              <h2 className="font-luxury text-3xl font-bold uppercase tracking-widest">¡Registro Actualizado!</h2>
+              <p className="text-zinc-500 text-[10px] uppercase tracking-[0.3em]">Tomauno Models agradece tu profesionalismo</p>
+           </div>
+        </div>
+      )}
+
+      <div className="glass p-10 rounded-[60px] flex justify-between items-center relative overflow-hidden">
+        <div className="absolute left-0 top-0 h-full w-2 bg-red-600"></div>
+        <div>
+          <h2 className="font-luxury text-4xl">Mi <span className="text-red-600 font-bold italic">Perfil</span></h2>
+          <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1">DNI: {formData.dni}</p>
+        </div>
+        <div className="flex gap-4">
+           {isRegistered && (
+             <button type="button" onClick={() => confirm('¿Deseas darte de baja del sistema?') && onDelete(formData.dni)} className="bg-red-900/20 text-red-500 px-6 py-3 rounded-full text-[9px] font-bold uppercase border border-red-900/30 hover:bg-red-600 hover:text-white transition-all">Darse de Baja</button>
+           )}
+           <button onClick={onClose} className="bg-zinc-900 px-8 py-3 rounded-full text-[10px] font-bold uppercase border border-zinc-800">Cerrar (ESC)</button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="glass p-10 rounded-[40px] space-y-10">
-          {/* Datos Personales */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">Nombre Completo*</label>
-              <input name="nombre" value={formData.nombre} onChange={handleChange} required className="w-full bg-black border border-zinc-800 rounded-xl p-4 focus:border-[#990000] outline-none" />
+      <form onSubmit={handleSave} className="space-y-12">
+        <div className="glass p-12 rounded-[60px] space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2"><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Nombre y Apellido</p>
+              <input name="nombre" value={formData.nombre} onChange={handleChange} required tabIndex={1} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none focus:border-red-600" />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">DNI (Inmutable)</label>
-              <input value={formData.dni} disabled className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-500 cursor-not-allowed" />
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Edad</p>
+              <input type="number" name="edad" value={formData.edad || ''} onChange={handleChange} tabIndex={2} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none text-center" />
             </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">Edad*</label>
-              <input type="number" name="edad" value={formData.edad || ''} onChange={handleChange} required className="w-full bg-black border border-zinc-800 rounded-xl p-4 focus:border-[#990000] outline-none" />
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Altura (m)</p>
+              <input name="altura" value={formData.altura} onChange={handleChange} placeholder="1,70" tabIndex={3} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none text-center" />
             </div>
-            
-            {/* TUTOR CONDICIONAL */}
-            {formData.edad > 0 && formData.edad < 18 && (
-              <div className="md:col-span-2 space-y-2 animate-fade">
-                <label className="text-[10px] uppercase font-bold text-red-500 tracking-widest">WhatsApp del Tutor (Obligatorio por ser menor)*</label>
-                <input name="waTutor" value={formData.waTutor} onChange={handleChange} required className="w-full bg-red-900/10 border border-red-900/50 rounded-xl p-4 outline-none" placeholder="Número de mamá, papá o tutor" />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">Altura (Ejem: 1,70)*</label>
-              <input name="altura" value={formData.altura} onChange={handleChange} required className="w-full bg-black border border-zinc-800 rounded-xl p-4 outline-none" />
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Medidas</p>
+              <input name="medidas" value={formData.medidas} onChange={handleChange} placeholder="90-60-90" tabIndex={4} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none text-center" />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">WhatsApp*</label>
-              <input name="wa" value={formData.wa} onChange={handleChange} required className="w-full bg-black border border-zinc-800 rounded-xl p-4 outline-none" />
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Calzado</p>
+              <input name="calzado" value={formData.calzado} onChange={handleChange} placeholder="38" tabIndex={5} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none text-center" />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">Instagram (@usuario)*</label>
-              <input name="ig" value={formData.ig} onChange={handleChange} required className="w-full bg-black border border-zinc-800 rounded-xl p-4 outline-none" />
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Ojos</p>
+              <input name="ojos" value={formData.ojos} onChange={handleChange} tabIndex={6} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none" />
+            </div>
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Pelo</p>
+              <input name="pelo" value={formData.pelo} onChange={handleChange} tabIndex={7} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none" />
+            </div>
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Localidad</p>
+              <input name="localidad" value={formData.localidad} onChange={handleChange} tabIndex={8} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none" />
+            </div>
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">WhatsApp</p>
+              <input name="wa" value={formData.wa} onChange={handleChange} tabIndex={9} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none" />
+            </div>
+            <div><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Instagram (Usuario)</p>
+              <input name="ig" value={formData.ig} onChange={handleChange} tabIndex={10} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none" />
+            </div>
+            <div className="md:col-span-3"><p className="text-[8px] uppercase font-bold text-zinc-600 mb-2 ml-4">Experiencia / Bio</p>
+              <textarea name="exp" value={formData.exp} onChange={handleChange} tabIndex={11} className="w-full bg-black border border-zinc-900 rounded-3xl p-5 outline-none h-24 resize-none" />
             </div>
           </div>
 
-          {/* Cualidades */}
-          <div className="space-y-4 pt-6 border-t border-zinc-900">
-            <h3 className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Cualidades y Destrezas</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {QUALITIES.map(q => (
-                <label key={q} className="flex items-center gap-3 bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 cursor-pointer hover:border-red-900/30 transition-all">
-                  <input type="checkbox" name="quals" value={q} checked={formData.quals.includes(q)} onChange={handleChange} className="w-4 h-4 accent-red-600" />
-                  <span className="text-[11px] uppercase tracking-tighter text-zinc-400">{q}</span>
+          <div className="space-y-6">
+            <p className="text-[10px] uppercase font-bold text-red-600 tracking-[0.5em] text-center">Destrezas y Cualidades</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {QUALITIES_LIST.map(q => (
+                <label key={q} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${formData.quals.includes(q) ? 'bg-red-900/10 border-red-600 text-white' : 'bg-black border-zinc-900 text-zinc-700 hover:border-zinc-700'}`}>
+                  <input type="checkbox" name="quals" value={q} checked={formData.quals.includes(q)} onChange={handleChange} className="hidden" />
+                  <span className="text-[8px] uppercase font-black">{q}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Experiencia y Anhelos */}
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-bold text-zinc-500">Tu Historia, Experiencia y Anhelos</label>
-            <textarea name="exp" value={formData.exp} onChange={handleChange} className="w-full bg-black border border-zinc-800 rounded-[25px] p-6 h-32 outline-none focus:border-[#990000] transition-all resize-none text-sm leading-relaxed" placeholder="Cuéntanos sobre ti, tus trabajos previos o qué esperas lograr..." />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+             {['foto1', 'foto2', 'foto3', 'composite'].map((f) => (
+               <div key={f} className="relative aspect-[3/4] bg-zinc-950 rounded-[40px] border-2 border-zinc-900 overflow-hidden group shadow-2xl">
+                  {(formData as any)[f] ? (
+                    <>
+                      <img src={(formData as any)[f]} className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setFormData({...formData, [f]: ''})} className="absolute top-4 right-4 bg-red-600/80 backdrop-blur-md p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-xl z-10">🗑️</button>
+                    </>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-zinc-800 space-y-2">
+                       <span className="text-4xl">+</span>
+                       <span className="text-[8px] uppercase font-bold">{f === 'composite' ? 'Composite' : 'Foto Portfolio'}</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" onChange={e => handleFileUpload(e, f)} className="absolute inset-0 opacity-0 cursor-pointer" />
+               </div>
+             ))}
           </div>
 
-          {/* Multimedia */}
-          <div className="space-y-6 pt-6 border-t border-zinc-900">
-             <h3 className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Multimedia (Links Drive o Web)</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="space-y-2">
-                    <label className="text-[9px] uppercase font-bold text-zinc-600">Foto {i}</label>
-                    <input name={`foto${i}`} value={(formData as any)[`foto${i}`]} onChange={handleChange} placeholder="Link de imagen" className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-[10px]" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             {[
+               { key: 'video1', label: 'Video Presentación (Max 50MB)' },
+               { key: 'video2', label: 'Caminata / Pasarela (Max 50MB)' }
+             ].map((v) => (
+               <div key={v.key} className="bg-zinc-950 p-8 rounded-[45px] border border-zinc-900 space-y-4 text-center group">
+                  <p className="text-[9px] uppercase font-black text-zinc-600 tracking-widest">{v.label}</p>
+                  <div className="relative aspect-video bg-black rounded-[30px] overflow-hidden border border-zinc-800 shadow-inner group-hover:border-red-600/30 transition-all">
+                    {(formData as any)[v.key] ? (
+                      <video src={(formData as any)[v.key]} controls className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full space-y-4">
+                         <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center text-2xl">📹</div>
+                         <p className="text-[8px] text-zinc-700 font-bold uppercase">Grabar o Subir Video</p>
+                      </div>
+                    )}
+                    <input type="file" accept="video/*" capture="user" onChange={e => handleFileUpload(e, v.key)} className="absolute inset-0 opacity-0 cursor-pointer" title="Cámara o Archivo" />
                   </div>
-                ))}
-                {[1,2].map(i => (
-                  <div key={i} className="space-y-2">
-                    <label className="text-[9px] uppercase font-bold text-red-900">Video Presentación {i}</label>
-                    <input name={`video${i}`} value={(formData as any)[`video${i}`]} onChange={handleChange} placeholder="Link de video o archivo" className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-[10px]" />
-                  </div>
-                ))}
-             </div>
+               </div>
+             ))}
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          disabled={loading || !isFormValid}
-          className="w-full bg-[#990000] hover:bg-red-700 py-6 rounded-full font-bold text-lg uppercase tracking-widest shadow-2xl transition-all active:scale-95 disabled:opacity-30"
-        >
-          {loading ? 'Sincronizando con la Nube...' : 'Guardar Portfolio 2026'}
-        </button>
+        <div className="sticky bottom-10 px-4">
+           <button type="submit" disabled={!isDirty || status === 'saving'} className={`w-full py-8 rounded-[45px] font-black text-xl uppercase tracking-[0.5em] transition-all shadow-[0_20px_60px_rgba(0,0,0,0.5)] active:scale-95 ${isDirty ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-zinc-900 text-zinc-700 grayscale cursor-not-allowed border border-zinc-800'}`}>
+             {isDirty ? 'Guardar Cambios' : 'Sin cambios detectados'}
+           </button>
+        </div>
       </form>
     </div>
   );
