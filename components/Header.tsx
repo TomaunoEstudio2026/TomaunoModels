@@ -2,7 +2,11 @@
 import React from 'react';
 import { LOGO_URL } from '../constants';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  visitors: number;
+}
+
+export const Header: React.FC<HeaderProps> = ({ visitors }) => {
   return (
     <header className="no-print bg-gradient-to-b from-[#2e0505] to-black py-8 border-b border-red-900/30 flex flex-col items-center shadow-2xl">
       <div className="w-20 h-20 rounded-full border border-white bg-white p-1 mb-4 shadow-xl">
@@ -12,6 +16,9 @@ export const Header: React.FC = () => {
         TOMA<span className="text-red-600">UNO</span> <span className="font-light italic text-red-600">MODEL'S</span>
       </h1>
       <p className="text-[10px] tracking-[0.4em] text-gray-400 mt-2 uppercase font-semibold">Agencia & Academia de Modelos Elite</p>
+      {visitors > 0 && (
+        <p className="text-[8px] tracking-[0.2em] text-red-600/40 mt-2 uppercase font-black">Visitas: {visitors.toLocaleString()}</p>
+      )}
     </header>
   );
 };

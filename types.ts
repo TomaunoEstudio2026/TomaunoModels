@@ -31,9 +31,9 @@ export interface Model {
   wa: string;
   waTutor?: string;
   ig: string;
-  exp: string;
+  exp: string; // Experiencia y Anhelos
   cat: Category;
-  quals: string[];
+  quals: string[]; // Destrezas
   beauty: boolean;
   staff: boolean;
   isCollaborator: boolean;
@@ -42,8 +42,8 @@ export interface Model {
   foto2: string;
   foto3: string;
   composite: string;
-  video1: string;
-  video2: string;
+  video1: string; // Video Presentación
+  video2: string; // Video Pasarela
   lastUpdate?: string;
   postulatedTo?: string[];
 }
@@ -54,6 +54,7 @@ export interface WallPost {
   nombre: string;
   mensaje: string;
   timestamp: string;
+  color?: string;
 }
 
 export interface Course {
@@ -70,16 +71,12 @@ export interface Course {
 export interface NewsItem {
   id: string;
   type: 'CASTING' | 'EVENTO' | 'NOTICIA';
-  date: string;
   title: string;
   desc: string;
+  date: string;
   applicants?: string[];
 }
 
-/**
- * FAQ interface for frequently asked questions
- * Added to fix the missing export error in FAQSection.tsx
- */
 export interface FAQ {
   id: string;
   q: string;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { SplashScreen } from './components/SplashScreen';
 import { Login } from './components/Login';
@@ -10,7 +11,6 @@ import { CoursePanel } from './components/CoursePanel';
 import { FAQSection } from './components/FAQSection';
 import { PrismaAssistant } from './components/PrismaAssistant';
 import { AboutUs } from './components/AboutUs';
-import { HomeCarousel } from './components/HomeCarousel';
 import { NewsSection } from './components/NewsSection';
 import { ModelPortfolioView } from './components/ModelPortfolioView';
 import { Model, WallPost, Course, Category, Gender } from './types';
@@ -19,7 +19,6 @@ import { apiService } from './apiService';
 
 const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<Model | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
@@ -33,7 +32,6 @@ const App: React.FC = () => {
   const [viewingPortfolioDni, setViewingPortfolioDni] = useState<string | null>(null);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const data = await apiService.request('getInitialData');
       if (data && data.success) {
@@ -41,12 +39,32 @@ const App: React.FC = () => {
         setPosts(data.muro || []);
         setVisitors(data.visitors || 0);
         if (data.prismaMemory) setPrismaKnowledge(data.prismaMemory);
-        setCourses(data.courses || []);
+        
+        const manualCourses: Course[] = [
+          {
+            id: 'cursomodelo1',
+            titulo: 'Modelaje Profesional Elite 2026',
+            fecha: 'Abril a Diciembre',
+            horario: 'Sábados (Elegir Turno)',
+            costo: 'Consultar WhatsApp',
+            temario: `PROGRAMA INTEGRAL:
+            • Módulo 1: Pasarela Internacional y Postura.
+            • Módulo 2: Fotografía de Moda y Posing.
+            • Módulo 3: Automaquillaje y Estética.
+            • Módulo 4: Oratoria y Marca Personal.
+            • Módulo 5: Nutrición y Salud Integral.
+            
+            REQUISITOS: Ganas de aprender y compromiso profesional.
+            INCLUYE: Certificación final y participación en desfiles exclusivos de Tomauno Models.`,
+            urlFlyer: 'https://lh3.googleusercontent.com/d/1Za8YozirGOYmgC5zR7hs_r2vvcUQBzXe',
+            enabled: true
+          }
+        ];
+        setCourses(manualCourses);
       }
     } catch (e) {
       console.error("Error loading data:", e);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -67,7 +85,34 @@ const App: React.FC = () => {
       setCurrentUser(existing);
     } else {
       setCurrentUser({ 
-        timestamp: new Date().toISOString(), dni, nombre: '', genero: Gender.FEMALE, edad: 0, altura: '', medidas: '', ojos: '', pelo: '', calzado: '', localidad: 'Posadas', wa: '', ig: '', tutor: '', exp: '', cat: Category.NEW_FACE, quals: [], beauty: false, staff: false, isCollaborator: false, isPublic: false, foto1: '', foto2: '', foto3: '', foto4: '', composite: '', video1: '', video2: '', postulatedTo: [] 
+        timestamp: new Date().toISOString(), 
+        dni, 
+        nombre: '', 
+        genero: Gender.FEMALE, 
+        edad: 0, 
+        altura: '', 
+        medidas: '', 
+        ojos: '', 
+        pelo: '', 
+        calzado: '', 
+        localidad: 'Posadas', 
+        wa: '', 
+        ig: '', 
+        waTutor: '', 
+        exp: '', 
+        cat: Category.NEW_FACE, 
+        quals: [], 
+        beauty: false, 
+        staff: false, 
+        isCollaborator: false, 
+        isPublic: false, 
+        foto1: '', 
+        foto2: '', 
+        foto3: '', 
+        composite: '', 
+        video1: '', 
+        video2: '', 
+        postulatedTo: [] 
       });
     }
     setActiveTab('profile');
@@ -105,10 +150,16 @@ const App: React.FC = () => {
 
       <main className="container mx-auto px-4 py-8 max-w-7xl animate-fade">
         {activeTab === 'home' && (
-          <div className="space-y-24">
-             <HomeCarousel models={models.filter(m => m.isPublic)} onViewPortfolio={setViewingPortfolioDni} />
+          <div className="space-y-12">
+             <div className="text-center space-y-4 py-12">
+                <h2 className="font-luxury text-5xl md:text-7xl uppercase tracking-tighter">Bienvenido a la <br/><span className="text-red-600 italic">Elite</span></h2>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-[0.6em]">Gestión Profesional de Modelos & Talentos</p>
+             </div>
              {!currentUser && <Login onLogin={handleLogin} onAdminAccess={() => setShowAdminLogin(true)} />}
-             <NewsSection news={[]} currentUser={currentUser} isAdmin={isAdmin} />
+             <NewsSection news={[]} currentUser={currentUser} isAdmin={isAdmin} onPostulate={async (id) => {
+               const res = await apiService.request('postulate', { dni: currentUser?.dni, id });
+               if(res) { await fetchData(); alert('¡Postulación Exitosa!'); }
+             }} />
           </div>
         )}
         
@@ -118,14 +169,23 @@ const App: React.FC = () => {
               isRegistered={models.some(m => String(m.dni) === String(currentUser.dni))} 
               onSave={async (m) => { 
                 const res = await apiService.request('saveModel', { data: m }); 
-                if(res) { await fetchData(); return true; } 
+                if(res) { 
+                  // Actualización local inmediata para evitar pérdida de datos
+                  setModels(prev => prev.map(old => old.dni === m.dni ? m : old));
+                  setCurrentUser(m);
+                  await fetchData(); 
+                  return true; 
+                } 
                 return false; 
               }} 
               onDelete={async (dni) => { 
-                if(confirm('¿Baja definitiva?')) {
+                if(confirm('¿Confirmas la baja de este registro?')) {
                   await apiService.request('deleteModel', { dni });
                   handleLogout();
+                  await fetchData();
+                  return true;
                 }
+                return false;
               }} 
               onClose={() => setActiveTab(isAdmin ? 'admin' : 'home')} 
            />
@@ -138,11 +198,17 @@ const App: React.FC = () => {
             onViewPortfolio={setViewingPortfolioDni}
             onLogout={handleLogout} 
             onToggleFlag={async (dni, field, val) => { 
-               const col = field === 'staff' ? 25 : field === 'beauty' ? 18 : field === 'isPublic' ? 28 : 29;
+               setModels(prev => prev.map(m => String(m.dni) === String(dni) ? { ...m, [field]: !val } : m));
+               const colMap: Record<string, number> = { staff: 24, beauty: 18, isPublic: 26 };
+               const col = colMap[field] || 24;
                await apiService.request('updateAdminToggle', { dni, col, currentVal: val }); 
-               await fetchData(); 
             }} 
-            onDeleteModel={async (dni) => { if(confirm('¿Borrar registro?')) { await apiService.request('deleteModel', { dni }); await fetchData(); } }} 
+            onDeleteModel={async (dni) => { 
+              if(confirm('¿Borrar este modelo definitivamente?')) {
+                await apiService.request('deleteModel', { dni }); 
+                await fetchData(); 
+              }
+            }} 
           />
         )}
 
@@ -157,10 +223,10 @@ const App: React.FC = () => {
               await fetchData(); 
             }} 
             onDeletePost={async (id) => { 
-              if(confirm('¿Borrar mensaje?')) { 
+              if(confirm('¿Borrar mensaje del muro?')) {
                 await apiService.request('deleteMuroPost', { id }); 
                 await fetchData(); 
-              } 
+              }
             }} 
           />
         )}
@@ -171,7 +237,7 @@ const App: React.FC = () => {
             isAdmin={isAdmin} 
             onPreRegister={async (d) => { 
               const res = await apiService.request('preRegister', { reg: d }); 
-              if(res) { alert('¡Inscripción Enviada!'); await fetchData(); }
+              if(res) { alert('¡Pre-Inscripción Exitosa! Nos contactaremos pronto.'); await fetchData(); }
               return true; 
             }} 
           />

@@ -20,6 +20,7 @@ export const ModelPortfolioView: React.FC<ModelPortfolioViewProps> = ({ model, o
     const handleKeys = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' && onNext) onNext();
       if (e.key === 'ArrowLeft' && onPrev) onPrev();
+      if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeys);
     return () => window.removeEventListener('keydown', handleKeys);
@@ -29,6 +30,19 @@ export const ModelPortfolioView: React.FC<ModelPortfolioViewProps> = ({ model, o
     const url = `${window.location.origin}${window.location.pathname}?dni=${model.dni}`;
     navigator.clipboard.writeText(url);
     alert("¡Link de Portfolio copiado! Ideal para compartir en tu biografía.");
+  };
+
+  const renderVideo = (url: string) => {
+    if (!url) return null;
+    
+    // Si es Google Drive
+    if (url.includes('drive.google.com')) {
+      const embedUrl = url.replace('/view', '/preview').replace('file/d/', 'file/d/').split('?')[0] + '/preview';
+      return <iframe src={embedUrl} className="w-full h-full rounded-[40px]" allow="autoplay" frameBorder="0"></iframe>;
+    }
+    
+    // Si es un archivo directo (o base64)
+    return <video src={url} controls className="w-full h-full object-cover rounded-[40px]" />;
   };
 
   return (
@@ -49,9 +63,8 @@ export const ModelPortfolioView: React.FC<ModelPortfolioViewProps> = ({ model, o
              <div className="aspect-[4/5] rounded-[60px] overflow-hidden border-2 border-zinc-900 bg-zinc-950 shadow-3xl group relative">
                 <img src={activePhoto} className="w-full h-full object-cover transition-transform duration-[2000ms]" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
-                {/* Flechas Visuales en el Portfolio */}
-                <button onClick={onPrev} className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/40 hover:bg-red-600 flex items-center justify-center text-2xl transition-all">←</button>
-                <button onClick={onNext} className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/40 hover:bg-red-600 flex items-center justify-center text-2xl transition-all">→</button>
+                {onPrev && <button onClick={onPrev} className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/40 hover:bg-red-600 flex items-center justify-center text-2xl transition-all">←</button>}
+                {onNext && <button onClick={onNext} className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/40 hover:bg-red-600 flex items-center justify-center text-2xl transition-all">→</button>}
              </div>
              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 {photos.map(p => (
@@ -65,13 +78,13 @@ export const ModelPortfolioView: React.FC<ModelPortfolioViewProps> = ({ model, o
           <div className="flex flex-col justify-center space-y-12">
              <div className="space-y-2">
                 <p className="text-red-600 text-[11px] font-black uppercase tracking-[0.8em]">Talento Exclusivo</p>
-                <h2 className="font-luxury text-8xl font-black text-white leading-none uppercase tracking-tighter">
+                <h2 className="font-luxury text-7xl md:text-8xl font-black text-white leading-none uppercase tracking-tighter">
                    {model.nombre.split(' ')[0]} <br/> <span className="text-red-600 italic">{model.nombre.split(' ').slice(1).join(' ')}</span>
                 </h2>
              </div>
 
              <div className="grid grid-cols-3 gap-8 border-y border-zinc-900 py-10 text-center">
-                {[ { l: 'Edad', v: `${model.edad} Años` }, { l: 'Altura', v: `${model.altura}m` }, { l: 'Medidas', v: model.medidas } ].map(d => (
+                {[ { l: 'Edad', v: `${model.edad} Años` }, { l: 'Altura', v: `${model.altura}m` }, { l: 'Medidas', v: model.medidas || 'S/D' } ].map(d => (
                    <div key={d.l}>
                       <p className="text-zinc-600 text-[9px] font-black uppercase tracking-widest">{d.l}</p>
                       <p className="text-xl font-bold font-luxury">{d.v}</p>
@@ -80,16 +93,12 @@ export const ModelPortfolioView: React.FC<ModelPortfolioViewProps> = ({ model, o
              </div>
 
              <div className="space-y-8">
-                <h4 className="font-luxury text-2xl italic text-red-600">Video Presentación / Pasarela</h4>
+                <h4 className="font-luxury text-2xl italic text-red-600">Multimedia / Pasarela</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    {[model.video1, model.video2].map((v, i) => (
                       v && (
                         <div key={i} className="aspect-video bg-zinc-900 rounded-[40px] overflow-hidden border border-zinc-800 shadow-xl relative group">
-                           {v.includes('drive.google.com') ? (
-                             <iframe src={v.replace('/view', '/preview').replace('file/d/', 'file/d/').split('?')[0] + '/preview'} className="w-full h-full" allow="autoplay"></iframe>
-                           ) : (
-                             <video src={v} controls className="w-full h-full object-cover" />
-                           )}
+                           {renderVideo(v)}
                            <div className="absolute top-4 left-4 bg-black/50 px-3 py-1 rounded-full text-[8px] uppercase font-black tracking-widest">Video {i+1}</div>
                         </div>
                       )

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Model, WallPost } from '../types';
 
@@ -6,33 +7,29 @@ interface CommunityWallProps {
   currentUser: Model | null;
   isAdmin: boolean;
   onPost: (msg: string) => void;
-  onDeletePost: (id: string | number) => void;
+  onDeletePost: (id: string) => void;
+  models: Model[];
 }
 
-export const CommunityWall: React.FC<CommunityWallProps> = ({ posts, currentUser, isAdmin, onPost, onDeletePost }) => {
+export const CommunityWall: React.FC<CommunityWallProps> = ({ posts, currentUser, isAdmin, onPost, onDeletePost, models }) => {
   const [msg, setMsg] = useState('');
   const [isPosting, setIsPosting] = useState(false);
 
-  // 1. LISTA DE PALABRAS OFENSIVAS (Puedes agregar más)
   const forbiddenWords = ['boludo', 'pelotudo', 'mierda', 'hdp', 'concha', 'puto'];
 
-  // 2. FUNCIÓN PARA LIMPIAR TEXTO Y CREAR LINKS
   const formatText = (text: string) => {
     let cleanText = text;
-    
-    // Censor de malas palabras
     forbiddenWords.forEach(word => {
       const regex = new RegExp(word, 'gi');
       cleanText = cleanText.replace(regex, '****');
     });
 
-    // Convertir @usuario en link de Instagram
     const withLinks = cleanText.split(/(\s+)/).map((part, i) => {
       if (part.startsWith('@')) {
         const username = part.substring(1);
         return <a key={i} href={`https://instagram.com/${username}`} target="_blank" className="text-red-500 font-bold hover:underline">{part}</a>;
       }
-      if (part.match(/^\+?[0-9]{10,15}$/)) { // Detectar números de WhatsApp
+      if (part.match(/^\+?[0-9]{10,15}$/)) {
         return <a key={i} href={`https://wa.me/${part.replace('+', '')}`} target="_blank" className="text-green-500 font-bold hover:underline">{part}</a>;
       }
       return part;
@@ -50,8 +47,7 @@ export const CommunityWall: React.FC<CommunityWallProps> = ({ posts, currentUser
   };
 
   return (
-    <div className="animate-fade-max-w-4xl mx-auto space-y-16 pb-40 px-4">
-      {/* TÍTULO */}
+    <div className="animate-fade max-w-4xl mx-auto space-y-16 pb-40 px-4">
       <div className="text-center space-y-4">
         <h2 className="font-luxury text-7xl md:text-8xl tracking-tighter uppercase leading-none">
           EL <span className="text-[#ff0000] font-bold italic">MURO</span>
@@ -59,7 +55,6 @@ export const CommunityWall: React.FC<CommunityWallProps> = ({ posts, currentUser
         <p className="text-zinc-600 text-[11px] uppercase tracking-[1em] font-black">Comunidad Tomauno Models</p>
       </div>
 
-      {/* CAJA DE MENSAJE (Solo si está logueado o es Admin) */}
       {(currentUser || isAdmin) && (
         <div className="glass p-12 rounded-[60px] space-y-8 bg-zinc-950/50 border-red-900/20 shadow-2xl">
           <textarea 
@@ -85,7 +80,6 @@ export const CommunityWall: React.FC<CommunityWallProps> = ({ posts, currentUser
         </div>
       )}
 
-      {/* LISTADO DE MENSAJES */}
       <div className="space-y-10">
         {posts.length === 0 ? (
           <p className="text-center text-zinc-700 uppercase tracking-widest py-20">El muro está esperando tu primer mensaje...</p>
@@ -96,7 +90,6 @@ export const CommunityWall: React.FC<CommunityWallProps> = ({ posts, currentUser
               className="p-10 rounded-[50px] border border-zinc-900 flex gap-8 relative group hover:border-red-600/30 transition-all shadow-2xl overflow-hidden"
               style={{ background: `linear-gradient(135deg, ${post.color || '#101010'} 0%, #000000 100%)` }}
             >
-              {/* CÍRCULO INICIAL */}
               <div className="w-20 h-20 rounded-full bg-black border-2 border-zinc-800 flex items-center justify-center flex-shrink-0 shadow-2xl">
                 <span className="text-3xl font-luxury italic font-black text-red-600">
                   {post.nombre?.charAt(0) || 'T'}
@@ -113,10 +106,9 @@ export const CommunityWall: React.FC<CommunityWallProps> = ({ posts, currentUser
                     <span className="text-[9px] text-zinc-500 uppercase font-black">{post.timestamp}</span>
                   </div>
                   
-                  {/* BOTÓN ELIMINAR (Solo Admin) */}
                   {isAdmin && (
                     <button 
-                      onClick={() => confirm('¿Borrar mensaje?') && onDeletePost(post.id)}
+                      onClick={() => { if(confirm('¿Borrar mensaje?')) onDeletePost(String(post.id)); }}
                       className="bg-zinc-900 p-4 rounded-2xl text-zinc-600 hover:text-red-600 transition-all border border-zinc-800"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
