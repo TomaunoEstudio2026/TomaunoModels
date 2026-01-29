@@ -1,23 +1,28 @@
 
-export const VERSION = "v22.0-ELITE-FINAL";
-export const ADMIN_KEY = "cirrus";
+export const VERSION = "v25.0-LUXURY";
+export const ADMIN_KEY = "323334";
 export const FOLDER_ID = "1-KHpXFiUuWWC8vpbEiyJy38goHTHO2Fz";
 export const WA_NUMBER = "+5493764354522";
 
 export const COLORS = {
   burgundy: '#2e0505',
-  redIntense: '#990000',
+  redIntense: '#ff0000',
   black: '#000000',
   white: '#ffffff'
 };
 
 export const LOGO_URL = "https://lh3.googleusercontent.com/d/1Pdo5Wpig81kERJIBpnlUmrB10J2DfxVr";
-export const FLYER_CURSO_1 = "https://lh3.googleusercontent.com/d/1Za8YozirGOYmgC5zR7hs_r2vvcUQBzXe";
+export const PHOTO_JAVIER = "https://lh3.googleusercontent.com/d/1v3BR0aF6-CTh7ZA5f0Gv1xtgQKbjMLE0"; 
+export const PHOTO_LUCRE = "https://lh3.googleusercontent.com/d/1Swe8Kvz2o-6cAYsYIHU50abhhQxTJXUL";
 
-// Fix: Added missing constants required for the AboutUs component
-export const MAPS_URL = "https://www.google.com/maps/dir//Pedro+M%C3%A9ndez+2069,+Posadas,+Misiones";
-export const PHOTO_JAVIER = "https://lh3.googleusercontent.com/d/1Pdo5Wpig81kERJIBpnlUmrB10J2DfxVr";
-export const PHOTO_LUCRE = "https://lh3.googleusercontent.com/d/1Pdo5Wpig81kERJIBpnlUmrB10J2DfxVr";
+// Fix: Added missing FLYER_CURSO_1 export used in CoursePanel.tsx
+export const FLYER_CURSO_1 = "https://lh3.googleusercontent.com/d/1Pdo5Wpig81kERJIBpnlUmrB10J2DfxVr";
+
+// Fix: Added missing MAPS_URL export used in AboutUs.tsx
+export const MAPS_URL = "https://www.google.com/maps/search/?api=1&query=Pedro+Méndez+2069+Posadas+Misiones";
+
+// Fix: Added missing PRISMA_DEFAULT_KNOWLEDGE export used in App.tsx
+export const PRISMA_DEFAULT_KNOWLEDGE = "Tomauno Models es una prestigiosa academia y agencia de modelos liderada por Javier Móttola y Lucrecia Ceballos. Ofrecemos formación integral en pasarela, fotografía y estética profesional. Nuestra sede central se ubica en Pedro Méndez 2069, Posadas, Misiones.";
 
 export const CATEGORY_ICONS: Record<string, string> = {
   'Alumno Actual Tomauno Models': '📖',
@@ -31,9 +36,6 @@ export const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export const QUALITIES_LIST = [
-  'Desfiles', 'Fotografías', 'Actuación', 'Videos', 'Danza', 
-  'Promotora', 'Fitness', 'Música', 'Influencer/UGC', 
-  'Vendedor', 'Locución', 'Asesoría de Imagen'
+  'Pasarela', 'Fotografía', 'Publicidad', 'Videos/Reels', 'Danza', 
+  'Promotora', 'Fitness', 'Influencer', 'Vendedor', 'Locución'
 ];
-
-export const PRISMA_DEFAULT_KNOWLEDGE = `Tomauno Models es la academia líder en Misiones. Javier Móttola es Director. Los cursos de modelos nivel 1 tienen un costo de inscripción de $35.000. El alias de pago es tomauno.belo.`;

@@ -44,7 +44,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onAdminAccess }) => {
               className="w-full bg-black border-2 border-zinc-900 rounded-[30px] px-6 py-6 text-center text-2xl font-bold tracking-[0.3em] focus:border-[#990000] outline-none text-white placeholder:text-zinc-900"
               onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             />
-            <p className="text-zinc-600 text-[8px] mt-3 uppercase tracking-widest font-bold">(Ingresa solo números sin puntos)</p>
+            <p className="text-zinc-600 text-[7px] mt-2 uppercase tracking-[0.6em] font-black opacity-60">Ingresa DNI sin puntos ni espacios</p>
             {error && <p className="text-red-600 text-[9px] mt-2 uppercase tracking-widest font-black animate-pulse">{error}</p>}
           </div>
 
@@ -52,7 +52,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onAdminAccess }) => {
             onClick={handleLogin}
             className="w-full bg-[#990000] hover:bg-red-700 text-white font-bold py-6 rounded-full transition-all active:scale-95 shadow-[0_20px_40px_rgba(153,0,0,0.3)] uppercase tracking-[0.3em] text-xs"
           >
-            Ingresar
+            Ingresar a Mi Perfil
           </button>
         </div>
       </div>

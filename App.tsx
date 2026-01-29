@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SplashScreen } from './components/SplashScreen';
 import { Login } from './components/Login';
@@ -8,38 +7,44 @@ import { ModelProfile } from './components/ModelProfile';
 import { AdminPanel } from './components/AdminPanel';
 import { CommunityWall } from './components/CommunityWall';
 import { CoursePanel } from './components/CoursePanel';
+import { FAQSection } from './components/FAQSection';
 import { PrismaAssistant } from './components/PrismaAssistant';
 import { AboutUs } from './components/AboutUs';
+import { HomeCarousel } from './components/HomeCarousel';
+import { NewsSection } from './components/NewsSection';
+import { ModelPortfolioView } from './components/ModelPortfolioView';
 import { Model, WallPost, Course, Category, Gender } from './types';
-import { ADMIN_KEY, PRISMA_DEFAULT_KNOWLEDGE, VERSION } from './constants';
+import { ADMIN_KEY, PRISMA_DEFAULT_KNOWLEDGE } from './constants';
 import { apiService } from './apiService';
 
 const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   const [currentUser, setCurrentUser] = useState<Model | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [models, setModels] = useState<Model[]>([]);
-  const [selectedDnis, setSelectedDnis] = useState<string[]>([]);
   const [posts, setPosts] = useState<WallPost[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [visitors, setVisitors] = useState(0);
+  const [prismaKnowledge, setPrismaKnowledge] = useState(PRISMA_DEFAULT_KNOWLEDGE);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPass, setAdminPass] = useState('');
+  const [viewingPortfolioDni, setViewingPortfolioDni] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
-    const data = await apiService.request('getInitialData');
-    if (data) {
-      setModels(data.models || []);
-      setPosts(data.posts || []);
-      setCourses([{ 
-        id: 'c1', titulo: 'Modelo Profesional Nivel 1', fecha: 'Sábados', horario: '9 a 12hs / 15 a 18hs',
-        costo: '$35.000 (Inscripción)', temario: 'Pasarela, Fotografía Editorial, Automaquillaje, Oratoria, Marketing Digital, Casting y Comportamiento Social.', img: '', location: 'Pedro Méndez 2069', enabled: true
-      }]);
-    } else {
-      setError(true);
+    try {
+      const data = await apiService.request('getInitialData');
+      if (data && data.success) {
+        setModels(data.models || []);
+        setPosts(data.muro || []);
+        setVisitors(data.visitors || 0);
+        if (data.prismaMemory) setPrismaKnowledge(data.prismaMemory);
+        setCourses(data.courses || []);
+      }
+    } catch (e) {
+      console.error("Error loading data:", e);
     }
     setLoading(false);
   };
@@ -47,20 +52,14 @@ const App: React.FC = () => {
   useEffect(() => {
     fetchData();
     const timer = setTimeout(() => setShowSplash(false), 3000);
-    
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showAdminLogin) setShowAdminLogin(false);
-        else if (activeTab === 'profile') setActiveTab(isAdmin ? 'admin' : 'home');
-        else if (activeTab !== 'home') setActiveTab('home');
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('keydown', handleEsc);
-    };
-  }, [showAdminLogin, activeTab, isAdmin]);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setIsAdmin(false);
+    setActiveTab('home');
+  };
 
   const handleLogin = (dni: string) => {
     const existing = models.find(m => String(m.dni) === String(dni));
@@ -68,68 +67,65 @@ const App: React.FC = () => {
       setCurrentUser(existing);
     } else {
       setCurrentUser({ 
-        timestamp: new Date().toISOString(), dni, nombre: '', genero: Gender.FEMALE, edad: 0, altura: '', medidas: '', ojos: '', pelo: '', calzado: '', localidad: 'Posadas', wa: '', waTutor: '', ig: '', exp: '', cat: Category.NEW_FACE, quals: [], beauty: false, staff: false, isCollaborator: false, foto1: '', foto2: '', foto3: '', composite: '', video1: '', video2: '', lastUpdate: new Date().toISOString(), postulatedTo: [] 
+        timestamp: new Date().toISOString(), dni, nombre: '', genero: Gender.FEMALE, edad: 0, altura: '', medidas: '', ojos: '', pelo: '', calzado: '', localidad: 'Posadas', wa: '', ig: '', tutor: '', exp: '', cat: Category.NEW_FACE, quals: [], beauty: false, staff: false, isCollaborator: false, isPublic: false, foto1: '', foto2: '', foto3: '', foto4: '', composite: '', video1: '', video2: '', postulatedTo: [] 
       });
     }
     setActiveTab('profile');
   };
 
-  const toggleModelSelection = (dni: string) => {
-    setSelectedDnis(prev => prev.includes(dni) ? prev.filter(d => d !== dni) : [...prev, dni]);
-  };
-
   return (
     <div className="min-h-screen pb-32 bg-black text-white selection:bg-red-600">
-      <Header />
-      
+      <Header visitors={visitors} />
       {showSplash && <SplashScreen />}
-
-      {error && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[5000] bg-red-600 text-white px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-2xl animate-bounce">
-          ⚠️ Revisa la conexión con Google Sheets.
-        </div>
+      
+      {viewingPortfolioDni && (
+        <ModelPortfolioView 
+          model={models.find(m => String(m.dni) === String(viewingPortfolioDni))!} 
+          onClose={() => setViewingPortfolioDni(null)} 
+        />
       )}
 
       {showAdminLogin && (
-        <div className="fixed inset-0 z-[20000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
-           <div className="bg-zinc-950 p-10 rounded-[50px] border border-red-600/30 w-full max-w-sm text-center space-y-8 shadow-[0_0_100px_rgba(153,0,0,0.2)]">
-              <h3 className="font-luxury text-2xl font-bold uppercase tracking-widest text-white">Acceso <span className="text-red-600">Staff</span></h3>
+        <div className="fixed inset-0 z-[20000] bg-black/95 flex items-center justify-center p-6 backdrop-blur-xl">
+           <div className="glass p-12 rounded-[60px] border-red-600/30 w-full max-w-sm text-center space-y-10 animate-fade shadow-[0_0_80px_rgba(255,0,0,0.2)]">
+              <h3 className="font-luxury text-3xl uppercase tracking-widest">Elite <span className="text-red-600 font-bold">Admin</span></h3>
               <input 
-                type="password" 
-                autoFocus 
+                type="password" autoFocus 
                 value={adminPass} 
-                onChange={e=>setAdminPass(e.target.value)} 
-                onKeyDown={e=>e.key==='Enter' && (adminPass === ADMIN_KEY ? (setIsAdmin(true), setShowAdminLogin(false), setActiveTab('admin')) : alert('Clave Incorrecta'))} 
-                placeholder="CLAVE" 
-                className="w-full bg-black border border-zinc-800 rounded-3xl p-5 text-center text-xl tracking-[0.4em] outline-none text-white focus:border-red-600 transition-all" 
+                onChange={e => setAdminPass(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && (adminPass === ADMIN_KEY ? (setIsAdmin(true), setShowAdminLogin(false), setActiveTab('admin')) : alert('Clave Incorrecta'))}
+                placeholder="PASSWORD" 
+                className="w-full bg-black/50 border-2 border-zinc-900 rounded-full px-8 py-6 text-center text-white focus:border-red-600 outline-none text-xl font-bold tracking-[0.5em]" 
               />
-              <button onClick={() => adminPass === ADMIN_KEY ? (setIsAdmin(true), setShowAdminLogin(false), setActiveTab('admin')) : alert('Clave Incorrecta')} className="w-full bg-red-600 py-4 rounded-full font-bold text-[10px] uppercase text-white shadow-lg active:scale-95 transition-all">Entrar</button>
-              <button onClick={()=>setShowAdminLogin(false)} className="text-zinc-600 text-[10px] uppercase font-bold hover:text-white">Cancelar (ESC)</button>
+              <button onClick={() => adminPass === ADMIN_KEY ? (setIsAdmin(true), setShowAdminLogin(false), setActiveTab('admin')) : alert('Error')} className="w-full bg-red-600 py-6 rounded-full font-black uppercase text-white shadow-2xl active:scale-95 transition-all text-sm tracking-widest">Acceder al Control</button>
+              <button onClick={() => setShowAdminLogin(false)} className="text-[10px] uppercase font-black text-zinc-600 hover:text-white transition-colors">Volver</button>
            </div>
         </div>
       )}
 
       <main className="container mx-auto px-4 py-8 max-w-7xl animate-fade">
-        {activeTab === 'home' && !currentUser && <Login onLogin={handleLogin} onAdminAccess={() => setShowAdminLogin(true)} />}
+        {activeTab === 'home' && (
+          <div className="space-y-24">
+             <HomeCarousel models={models.filter(m => m.isPublic)} onViewPortfolio={setViewingPortfolioDni} />
+             {!currentUser && <Login onLogin={handleLogin} onAdminAccess={() => setShowAdminLogin(true)} />}
+             <NewsSection news={[]} currentUser={currentUser} isAdmin={isAdmin} />
+          </div>
+        )}
         
         {activeTab === 'profile' && currentUser && (
            <ModelProfile 
               model={currentUser} 
               isRegistered={models.some(m => String(m.dni) === String(currentUser.dni))} 
               onSave={async (m) => { 
-                const res = await apiService.request('saveModel', { model: m }); 
-                if(res) { fetchData(); return true; } 
+                const res = await apiService.request('saveModel', { data: m }); 
+                if(res) { await fetchData(); return true; } 
                 return false; 
               }} 
               onDelete={async (dni) => { 
-                const ok = await apiService.request('deleteModel', { dni }); 
-                if(ok) {
-                  fetchData(); 
-                  setCurrentUser(null);
-                  setActiveTab('home');
-                  return true;
+                if(confirm('¿Baja definitiva?')) {
+                  await apiService.request('deleteModel', { dni });
+                  handleLogout();
                 }
-                return false;
               }} 
               onClose={() => setActiveTab(isAdmin ? 'admin' : 'home')} 
            />
@@ -138,29 +134,15 @@ const App: React.FC = () => {
         {activeTab === 'admin' && isAdmin && (
           <AdminPanel 
             models={models} 
-            selectedDnis={selectedDnis}
-            onToggleSelection={toggleModelSelection}
-            onSelectAll={(dnis) => setSelectedDnis(dnis)}
-            onEditModel={(dni) => { 
-              const m = models.find(x => String(x.dni) === String(dni)); 
-              if (m) { setCurrentUser(m); setActiveTab('profile'); } 
+            onEditModel={(dni) => { const m = models.find(x => String(x.dni) === String(dni)); if (m) { setCurrentUser(m); setActiveTab('profile'); } }}
+            onViewPortfolio={setViewingPortfolioDni}
+            onLogout={handleLogout} 
+            onToggleFlag={async (dni, field, val) => { 
+               const col = field === 'staff' ? 25 : field === 'beauty' ? 18 : field === 'isPublic' ? 28 : 29;
+               await apiService.request('updateAdminToggle', { dni, col, currentVal: val }); 
+               await fetchData(); 
             }} 
-            onLogout={() => { setIsAdmin(false); setActiveTab('home'); }} 
-            onToggleFlag={async (dni, field) => { 
-              const target = models.find(m => String(m.dni) === String(dni));
-              if(!target) return;
-              const updatedModel = { ...target, [field]: !target[field] };
-              // Actualización Local Inmediata
-              setModels(prev => prev.map(m => String(m.dni) === String(dni) ? updatedModel : m));
-              await apiService.request('saveModel', { model: updatedModel });
-            }} 
-            onDeleteModel={async (dni) => { 
-              if(confirm('¿Eliminar permanentemente este registro?')) {
-                const ok = await apiService.request('deleteModel', { dni }); 
-                if(ok) setModels(prev => prev.filter(m => String(m.dni) !== String(dni)));
-                else alert("Error al eliminar en servidor.");
-              }
-            }} 
+            onDeleteModel={async (dni) => { if(confirm('¿Borrar registro?')) { await apiService.request('deleteModel', { dni }); await fetchData(); } }} 
           />
         )}
 
@@ -169,13 +151,16 @@ const App: React.FC = () => {
             posts={posts} 
             currentUser={currentUser} 
             isAdmin={isAdmin} 
+            models={models}
             onPost={async (msg) => { 
-              const res = await apiService.request('addMuroPost', { dni: currentUser?.dni || 'Staff', nombre: currentUser?.nombre || 'Javier Móttola', txt: msg }); 
-              if(res) fetchData(); 
+              await apiService.request('addMuroPost', { dni: currentUser?.dni || 'Staff', nombre: currentUser?.nombre || 'Javier', txt: msg }); 
+              await fetchData(); 
             }} 
             onDeletePost={async (id) => { 
-              await apiService.request('deleteMuroPost', { id }); 
-              fetchData(); 
+              if(confirm('¿Borrar mensaje?')) { 
+                await apiService.request('deleteMuroPost', { id }); 
+                await fetchData(); 
+              } 
             }} 
           />
         )}
@@ -184,21 +169,28 @@ const App: React.FC = () => {
           <CoursePanel 
             courses={courses} 
             isAdmin={isAdmin} 
-            onPreRegister={async (data) => { 
-              const ok = await apiService.request('registerToCourse', { registration: data }); 
-              return !!ok;
+            onPreRegister={async (d) => { 
+              const res = await apiService.request('preRegister', { reg: d }); 
+              if(res) { alert('¡Inscripción Enviada!'); await fetchData(); }
+              return true; 
             }} 
           />
         )}
+        
+        {activeTab === 'faq' && <FAQSection isAdmin={isAdmin} />}
         {activeTab === 'about' && <AboutUs />}
       </main>
 
-      <div className="fixed bottom-32 left-1/2 -translate-x-1/2 text-[8px] opacity-20 font-bold uppercase tracking-[0.5em] pointer-events-none z-0">
-        Elite Ecosistema Digital <span className="text-red-600">{VERSION}</span> | Javier Móttola ®
-      </div>
-
-      <NavBar activeTab={activeTab} setActiveTab={setActiveTab} isAdmin={isAdmin} isLoggedIn={!!currentUser} onAdminAccess={() => setShowAdminLogin(true)} onLogout={() => { setCurrentUser(null); setIsAdmin(false); setActiveTab('home'); }} />
-      <PrismaAssistant knowledge={PRISMA_DEFAULT_KNOWLEDGE} isAdmin={isAdmin} />
+      <NavBar activeTab={activeTab} setActiveTab={setActiveTab} isAdmin={isAdmin} isLoggedIn={!!currentUser} onAdminAccess={() => setShowAdminLogin(true)} onLogout={handleLogout} />
+      
+      <PrismaAssistant 
+        knowledge={prismaKnowledge} 
+        isAdmin={isAdmin} 
+        onSaveKnowledge={async (txt) => { 
+          const ok = await apiService.request('saveGlobalNews', { txt }); 
+          if(ok) { alert('Memoria Inyectada'); await fetchData(); }
+        }} 
+      />
     </div>
   );
 };

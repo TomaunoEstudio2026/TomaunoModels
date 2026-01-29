@@ -37,15 +37,15 @@ export interface Model {
   beauty: boolean;
   staff: boolean;
   isCollaborator: boolean;
+  isPublic: boolean;
   foto1: string;
   foto2: string;
   foto3: string;
   composite: string;
-  video1: string; // Video Presentación
-  video2: string; // Video Pasarela
-  lastUpdate: string;
-  postulatedTo: string[];
-  isSelected?: boolean;
+  video1: string;
+  video2: string;
+  lastUpdate?: string;
+  postulatedTo?: string[];
 }
 
 export interface WallPost {
@@ -63,23 +63,23 @@ export interface Course {
   horario: string;
   costo: string;
   temario: string;
-  img: string;
-  location: string;
+  urlFlyer: string;
   enabled: boolean;
 }
 
 export interface NewsItem {
   id: string;
-  title: string;
-  type: 'CASTING' | 'EVENTO' | 'TIP';
+  type: 'CASTING' | 'EVENTO' | 'NOTICIA';
   date: string;
+  title: string;
   desc: string;
-  img?: string;
-  // Fix: Added missing applicants property used in NewsSection component
   applicants?: string[];
 }
 
-// Fix: Added missing FAQ interface for FAQSection component
+/**
+ * FAQ interface for frequently asked questions
+ * Added to fix the missing export error in FAQSection.tsx
+ */
 export interface FAQ {
   id: string;
   q: string;

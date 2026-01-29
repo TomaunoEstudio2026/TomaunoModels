@@ -1,28 +1,42 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Fix: Moved GoogleGenAI instantiation inside the function to ensure it uses the most up-to-date process.env.API_KEY
 export const askPrisma = async (prompt: string, customKnowledge: string) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview",
       contents: prompt,
       config: {
-        systemInstruction: `Eres "Prisma", el asistente experto de Tomauno Models. 
-        INSTRUCCIONES DE ENTRENAMIENTO ACTUALES:
+        tools: [{ googleSearch: {} }],
+        systemInstruction: `Eres "Prisma", el asistente de inteligencia artificial exclusivo de Tomauno Models (Agencia de Javier Móttola).
+        
+        CONOCIMIENTO INTERNO ACTUAL:
         ${customKnowledge}
         
-        REGLAS DE ORO:
-        1. Sé elegante, profesional y conciso.
-        2. Siempre anima a la persona a unirse a la academia.
-        3. No inventes precios si no están en el conocimiento actual.
-        4. Si alguien quiere pagar, dile que use el alias tomauno.belo.`,
-        temperature: 0.7,
+        REGLAS DE INTERACCIÓN:
+        1. Tu tono es sofisticado, elegante, minimalista y muy profesional.
+        2. Si te preguntan por castings o eventos de moda en la ciudad, utiliza Google Search para dar información real y reciente.
+        3. Siempre anima a la persona a sumarse a la academia en Pedro Méndez 2069, Posadas.
+        4. Para pagos, el alias oficial es tomauno.belo.
+        5. No respondas sobre temas ajenos al modelaje, estética o Tomauno Models.
+        6. Si no sabes algo basado en el conocimiento interno, búscalo en la web pero mantén el contexto de la agencia.`,
+        temperature: 0.6,
       },
     });
-    return response.text || "Lo siento, estoy actualizando mi base de datos. ¿Podrías preguntar de nuevo?";
+
+    // Extraemos las URLs de las fuentes si Google Search fue utilizado
+    let sources = "";
+    if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
+       const links = response.candidates[0].groundingMetadata.groundingChunks
+         .filter((chunk: any) => chunk.web?.uri)
+         .map((chunk: any) => `\n- [${chunk.web.title}](${chunk.web.uri})`);
+       if (links.length > 0) sources = "\n\nFuentes encontradas:" + links.join("");
+    }
+
+    return (response.text || "Lo siento, mi conexión con el estudio está lenta. ¿Podrías repetir?") + sources;
   } catch (error) {
-    return "En este momento Javier Móttola está en una sesión de fotos, por favor escríbele directamente al +5493764354522.";
+    console.error("Gemini Error:", error);
+    return "En este momento Javier Móttola está en una sesión de fotos. Por favor contáctanos al WhatsApp +5493764354522 para una respuesta directa.";
   }
 };
