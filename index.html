@@ -1,0 +1,68 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tomauno Model's | Elite Ecosystem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --burgundy: #2e0505;
+            --tomauno-red: #ff0000;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-luxury { font-family: 'Playfair Display', serif; }
+        
+        /* Custom UI Elements */
+        .glass { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 0, 0, 0.1); }
+        .btn-luxury { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
+        .btn-luxury:active { transform: scale(0.95); }
+        .shadow-red { shadow: 0 0 20px rgba(255, 0, 0, 0.2); }
+        
+        /* Zoom & Lightbox */
+        .zoom-img:hover { transform: scale(1.05); transition: transform 0.5s ease; cursor: zoom-in; }
+        
+        /* Print Styles for 6 models per page */
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; }
+            @page { size: A4; margin: 1cm; }
+            .print-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: min-content; gap: 1cm; }
+            .print-card { page-break-inside: avoid; border: 1px solid #ccc; padding: 10px; height: 13cm; display: flex; flex-direction: column; }
+            .print-card img { height: 8cm; object-fit: cover; }
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.6s ease forwards; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--burgundy); border-radius: 10px; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
